@@ -970,9 +970,31 @@ impl<'a> Indexed<'a> {
                         written: Written::Name,
                         augmentation: None,
                     };
+                    // Preserve a facade that this occurrence actually names and that
+                    // re-exports this alias. A barrel is not itself a type alias, so
+                    // stood_for alone would lose its public surface. Other modules
+                    // merely imported by the file cannot open the target.
+                    let mut chain = chain.clone();
+                    for module in modules_at.get(&reference.line).into_iter().flatten() {
+                        if let Some(facade) = documents.iter().find(|doc| doc.path == *module)
+                            && let Some(exported) = facade
+                                .references
+                                .iter()
+                                .find(|r| r.symbol == reference.symbol)
+                            && !chain.iter().any(|at| at.file == facade.path)
+                        {
+                            chain.insert(
+                                0,
+                                AliasDefinition {
+                                    file: facade.path.clone(),
+                                    line: exported.line,
+                                },
+                            );
+                        }
+                    }
                     by_alias.entry(key).or_default().insert(Aliased {
                         line: reference.line,
-                        chain: chain.clone(),
+                        chain,
                     });
                 }
             }

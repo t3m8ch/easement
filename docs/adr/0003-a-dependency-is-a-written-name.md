@@ -19,3 +19,13 @@ status: accepted
 - Some indexers record a written class name only as the class's constructor: scip-java for `new X()`, scip-dotnet for an attribute `[X]`. Reading the index, a constructor is read as its class. It is the only member treated this way. Ruby's `initialize` is not: its occurrence stands on `new`, and the class's own symbol is already beside it.
 - The clauses about files judge the modules a file names, not the names it writes. A surface (`public`, a named surface) lets a name through when a public file re-exports it, wherever it is defined. A name a file reaches only through aliases is judged by the surfaces of its component, unless one of those aliases is defined in a file of that component open to the file, as a public file's re-export would be: otherwise an alias in a third component would open any file of it. A name that an excluded file defines (a generated `api.pb.go` beside `api.go`) is no dependency: only a module the code names fails as `excluded`.
 - No compatibility mode: this ships as a breaking change.
+
+## Fork correction: public barrels and alias expansion
+
+A public barrel that re-exports an alias retains its facade when that alias is
+expanded to private types of the same component. SCIP records the re-export as a
+reference to the alias, not a new alias definition. The expansion therefore keeps
+the re-export location as evidence when the consumer's occurrence names that
+barrel and the barrel references the alias it imports. A barrel of a different
+component cannot open the target's private surface. Ordinary private imports and
+explicit symbol prohibitions remain checked.

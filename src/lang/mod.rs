@@ -128,7 +128,7 @@ pub struct Aliased {
     pub chain: Vec<AliasDefinition>,
 }
 
-/// Where an alias is defined.
+/// Where an alias is defined, or the facade it was imported through re-exports it.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AliasDefinition {
     pub file: String,

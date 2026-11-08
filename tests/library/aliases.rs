@@ -444,3 +444,55 @@ fn an_alias_of_an_external_name_counts_against_no_external_rule_of_its_user() {
     let checked = check(&root);
     assert_eq!(checked.outcome(), Outcome::Passed, "{}", text(&checked));
 }
+
+/// A public barrel re-exporting a structural type must retain the facade when
+/// its aliases are expanded to private implementation types of that component.
+#[test]
+fn a_public_barrel_keeps_its_alias_dependencies_behind_the_facade() {
+    let policy = "version: 1\ncomponents:\n  platform: { in: src/platform, public: src/platform/public.ts }\n  app: { in: src/app }\nrules:\n  app: { may_depend_on: [platform] }\n";
+    let (_tmp, root) = project(&[
+        ("easement.yml", policy),
+        (
+            "package.json",
+            r#"{"name":"facade-test","version":"1.0.0"}"#,
+        ),
+        (
+            "src/platform/public.ts",
+            "export type { Context } from './context';\n",
+        ),
+        (
+            "src/platform/context.ts",
+            "import type { Database } from './db';\nexport type Context = { db: Database };\n",
+        ),
+        (
+            "src/platform/db.ts",
+            "export type Database = { value: string };\nexport type Secret = string;\n",
+        ),
+        (
+            "src/app/main.ts",
+            "import type { Context } from '../platform/public';\nexport const use = (ctx: Context) => ctx.db.value;\n",
+        ),
+    ]);
+    let accepted = check(&root);
+    assert_eq!(
+        accepted.outcome(),
+        easement::commands::Outcome::Passed,
+        "{}",
+        text(&accepted)
+    );
+    // Opening a facade for Context never opens ordinary private imports.
+    for source in [
+        "import type { Context } from '../platform/context';\nexport const use = (ctx: Context) => ctx.db.value;\n",
+        "import type { Context } from '../platform/public';\nimport type { Secret } from '../platform/db';\nexport const use = (ctx: Context, secret: Secret) => ctx.db.value + secret;\n",
+    ] {
+        std::fs::write(root.join("src/app/main.ts"), source).unwrap();
+        let rejected = check(&root);
+        assert_eq!(
+            rejected.outcome(),
+            easement::commands::Outcome::Failed,
+            "{}",
+            text(&rejected)
+        );
+        assert!(text(&rejected).contains("[privacy]"));
+    }
+}
