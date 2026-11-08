@@ -5,31 +5,45 @@ fork adds `accept_augmentations` for projects that deliberately accept selected
 implicit relationships. It is currently recognized for TypeScript/JavaScript SCIP
 module-string references to a quoted external-module augmentation descriptor.
 
-For TanStack Router registration, add this to the component policy:
+For project-wide TanStack Router registration, use the same entry in each of the
+project's independent component and environment policies:
 
 ```yaml
 accept_augmentations:
-  - consumers: [platform]
-    module: '@tanstack/react-router'
-    declaration: src/router.tsx
-    because: platform links deliberately use the application router registration
-  - consumers: [platform]
-    module: '@tanstack/react-router'
-    declaration: src/app/navigation.tsx
-    because: platform links deliberately use static route metadata
-  - consumers: [platform]
-    module: '@tanstack/react-router'
-    declaration: src/routeTree.gen.ts
-    because: platform links deliberately use generated route typing
+  - module: '@tanstack/react-router'
+    because: implicit global router registration typing is intentional
 ```
 
-Use actual component names from each policy. For a separate environment policy,
-repeat the entries with `consumers: [ui]` if that policy assigns those consumers to
-`ui`. Paths and module specifiers match exactly, without globs, package-prefix
-matching or implied descendant components. A subpath import needs its own entry.
-The declaration path selects the augmentation module in that file, not individual
-interfaces within it. Multiple augmentations of the same module in one file are
-accepted together.
+Only `module` and `because` are mandatory. The module specifier matches exactly:
+`@tanstack/react-router` does not match another package or
+`@tanstack/react-router/subpath`. No globs or package-prefix matching are supported.
+The reason must be nonempty.
+
+Omitting `consumers` accepts matching implicit relationships from all consumers,
+including files outside named components and newly introduced components. Omitting
+`declaration` accepts all augmentation declaration files for that exact module,
+including newly generated or added files. For example, the entry above covers
+`src/router.tsx`, `src/app/navigation.tsx` and `src/routeTree.gen.ts` without naming
+them. It also accepts relationships between those augmentation files themselves.
+
+Both selectors remain available independently to narrow the acceptance:
+
+```yaml
+accept_augmentations:
+  - module: '@tanstack/react-router'
+    consumers: [platform]
+    declaration: src/router.tsx
+    because: platform links deliberately use this router registration
+```
+
+A supplied `consumers` must be a nonempty list of known exact component names,
+without implied descendant components. A supplied `declaration` must be one
+nonempty exact project-relative file path, without globs or parent traversal.
+Explicit null selectors, empty lists, empty strings and wrong value types fail;
+only omission means all. Existing entries with both selectors keep their scope.
+The declaration selector covers all augmentations of the selected module in that
+file, rather than individual interfaces. A typo naming an existing but wrong
+component or a declaration path with no matching relationship accepts nothing.
 
 Only the implicit module-string relationships disappear from dependency and
 reachability judgments, including `reach: symbols`. Their contribution to cycles,

@@ -34,8 +34,8 @@ pub struct Config {
     /// Components every other component may depend on.
     #[serde(default)]
     pub common: Vec<String>,
-    /// Accept implicit module-string relationships to exactly one augmentation file,
-    /// for the listed consumers. Direct imports and explicit symbol uses remain checked.
+    /// Accept implicit augmentation relationships of an exact external module. Optional
+    /// consumers and declaration selectors narrow it. Direct imports remain checked.
     #[serde(default)]
     pub accept_augmentations: Vec<AugmentationAcceptance>,
     /// Per component: what it may depend on and use.
@@ -134,11 +134,36 @@ pub struct Config {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct AugmentationAcceptance {
-    pub consumers: Vec<String>,
+    /// Omitted: all consumers, including files outside components. When supplied,
+    /// a nonempty list of exact component names; null is invalid.
+    #[serde(
+        default,
+        deserialize_with = "supplied_selector",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schemars(with = "Vec<String>", extend("minItems" = 1))]
+    pub consumers: Option<Vec<String>>,
+    /// Exact external module specifier, without package-prefix or glob matching.
     pub module: String,
-    /// Exact project-relative path, without globs.
-    pub declaration: String,
+    /// Omitted: all declaration files. When supplied, one nonempty exact
+    /// project-relative path, without globs; null is invalid.
+    #[serde(
+        default,
+        deserialize_with = "supplied_selector",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[schemars(with = "String", extend("minLength" = 1))]
+    pub declaration: Option<String>,
     pub because: String,
+}
+
+// Missing selectors use Default; supplied null must never become a wildcard.
+fn supplied_selector<'de, D, T>(deserializer: D) -> std::result::Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    T::deserialize(deserializer).map(Some)
 }
 
 impl Config {
@@ -148,11 +173,16 @@ impl Config {
         module: Option<&str>,
         declaration: &str,
     ) -> Option<&AugmentationAcceptance> {
-        let (consumer, module) = (consumer?, module?);
+        let module = module?;
         self.accept_augmentations.iter().find(|accept| {
-            accept.consumers.iter().any(|c| c == consumer)
-                && accept.module == module
-                && accept.declaration == declaration
+            accept.module == module
+                && accept.consumers.as_ref().is_none_or(|consumers| {
+                    consumer.is_some_and(|consumer| consumers.iter().any(|c| c == consumer))
+                })
+                && accept
+                    .declaration
+                    .as_deref()
+                    .is_none_or(|path| path == declaration)
         })
     }
 }

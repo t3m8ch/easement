@@ -420,9 +420,12 @@ impl Diff<'_> {
                 .map(|a| {
                     format!(
                         "{} -> {} in {}: {}",
-                        a.consumers.join(", "),
+                        a.consumers
+                            .as_ref()
+                            .map(|c| c.join(", "))
+                            .unwrap_or_else(|| "all consumers".into()),
                         a.module,
-                        a.declaration,
+                        a.declaration.as_deref().unwrap_or("all declarations"),
                         a.because
                     )
                 })

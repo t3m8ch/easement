@@ -482,9 +482,11 @@ The directive begins the first comment of its line (`//`, `/*`, `#`, `<!--`, or 
 
 ## Accepted module augmentations (fork)
 
-`accept_augmentations` deliberately accepts an implicit relationship from selected
-`consumers` to one external `module` in one exact `declaration` file. Every entry
-requires `because`. Ordinary imports of that file and explicit project-symbol uses
+`accept_augmentations` deliberately accepts implicit augmentation relationships of
+one exact external `module`, with a required nonempty `because`. Optional
+`consumers` and `declaration` narrow the acceptance to listed components and one
+exact file. Omitted selectors mean all, including new consumers and declarations;
+explicit null, empty or malformed selectors fail. Ordinary imports of that file and explicit project-symbol uses
 remain checked; accepted metadata also stops contributing to `must_not_reach`.
 Applied exceptions appear in text and JSON `stats.accepted_augmentations`.
 See [scope, examples and installation](augmentation-policy.md).

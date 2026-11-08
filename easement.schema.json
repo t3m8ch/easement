@@ -6,7 +6,7 @@
   "type": "object",
   "properties": {
     "accept_augmentations": {
-      "description": "Accept implicit module-string relationships to exactly one augmentation file, for the listed consumers. Direct imports and explicit symbol uses remain checked.",
+      "description": "Accept implicit augmentation relationships of an exact external module. Optional consumers and declaration selectors narrow it. Direct imports remain checked.",
       "type": "array",
       "default": [],
       "items": {
@@ -269,24 +269,26 @@
           "type": "string"
         },
         "consumers": {
+          "description": "Omitted: all consumers, including files outside components. When supplied, a nonempty list of exact component names; null is invalid.",
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "minItems": 1
         },
         "declaration": {
-          "description": "Exact project-relative path, without globs.",
-          "type": "string"
+          "description": "Omitted: all declaration files. When supplied, one nonempty exact project-relative path, without globs; null is invalid.",
+          "type": "string",
+          "minLength": 1
         },
         "module": {
+          "description": "Exact external module specifier, without package-prefix or glob matching.",
           "type": "string"
         }
       },
       "additionalProperties": false,
       "required": [
-        "consumers",
         "module",
-        "declaration",
         "because"
       ]
     },

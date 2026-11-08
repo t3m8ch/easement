@@ -102,7 +102,7 @@ impl Project {
                     file: relpath::slash(&dep.file),
                     line: dep.line,
                     module: accept.module.clone(),
-                    declaration: accept.declaration.clone(),
+                    declaration: target.key(),
                     because: accept.because.clone(),
                 });
                 false

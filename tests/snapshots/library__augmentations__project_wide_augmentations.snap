@@ -1,0 +1,48 @@
+---
+source: tests/library/augmentations.rs
+expression: relationships
+---
+[
+  {
+    "because": "routing registration is intentional",
+    "declaration": "src/app/static.ts",
+    "file": "src/app/router.ts",
+    "line": 1,
+    "module": "router-lib"
+  },
+  {
+    "because": "routing registration is intentional",
+    "declaration": "src/app/router.ts",
+    "file": "src/app/static.ts",
+    "line": 1,
+    "module": "router-lib"
+  },
+  {
+    "because": "routing registration is intentional",
+    "declaration": "src/app/router.ts",
+    "file": "src/platform/link.ts",
+    "line": 1,
+    "module": "router-lib"
+  },
+  {
+    "because": "routing registration is intentional",
+    "declaration": "src/app/static.ts",
+    "file": "src/platform/link.ts",
+    "line": 1,
+    "module": "router-lib"
+  },
+  {
+    "because": "routing registration is intentional",
+    "declaration": "src/app/router.ts",
+    "file": "src/ui/link.ts",
+    "line": 1,
+    "module": "router-lib"
+  },
+  {
+    "because": "routing registration is intentional",
+    "declaration": "src/app/static.ts",
+    "file": "src/ui/link.ts",
+    "line": 1,
+    "module": "router-lib"
+  }
+]

@@ -45,27 +45,37 @@ impl Config {
             Ok(())
         };
         for accept in &self.accept_augmentations {
-            if accept.consumers.is_empty()
-                || accept.module.trim().is_empty()
-                || accept.because.trim().is_empty()
-            {
-                bail!("accept_augmentations requires consumers, module and a nonempty because");
+            if accept.module.trim().is_empty() || accept.because.trim().is_empty() {
+                bail!("accept_augmentations requires module and a nonempty because");
             }
-            if accept.module.starts_with(['.', '/']) || accept.module.contains(['*', '?']) {
+            if accept.module.starts_with(['.', '/'])
+                || accept.module.contains(['*', '?', '[', ']', '\\'])
+                || accept.module.trim() != accept.module
+            {
                 bail!("accept_augmentations.module must be an exact external module");
             }
-            let path = &accept.declaration;
-            if path.is_empty()
-                || path.starts_with('/')
-                || path.contains(['*', '?', '[', '\\', ':'])
-                || path
-                    .split('/')
-                    .any(|p| p == ".." || p == "." || p.is_empty())
+            if let Some(path) = &accept.declaration
+                && (path.trim().is_empty()
+                    || path.trim() != path
+                    || path.starts_with('/')
+                    || path.contains(['*', '?', '[', ']', '\\', ':'])
+                    || path
+                        .split('/')
+                        .any(|p| p == ".." || p == "." || p.is_empty()))
             {
-                bail!("accept_augmentations.declaration must be an exact project-relative path");
+                bail!(
+                    "accept_augmentations.declaration must be a nonempty exact project-relative path"
+                );
             }
-            for consumer in &accept.consumers {
-                check(consumer, "accept_augmentations.consumers")?;
+            if let Some(consumers) = &accept.consumers {
+                if consumers.is_empty() {
+                    bail!(
+                        "accept_augmentations.consumers must be a nonempty list; omit it to accept all consumers"
+                    );
+                }
+                for consumer in consumers {
+                    check(consumer, "accept_augmentations.consumers")?;
+                }
             }
         }
         for name in &self.common {

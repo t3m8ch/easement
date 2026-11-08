@@ -6,9 +6,13 @@ status: accepted
 
 This fork implements the project outcome of upstream issue #134 at the user's
 explicit request, before upstream agreement. The default graph remains strict.
-`accept_augmentations` selects consumer components, an exact external module
-specifier and one exact project-relative declaration file, with a required reason.
-Multiple declarations require separate entries. This deliberately accepts the
+`accept_augmentations` selects an exact external module specifier with a required
+reason. The fork owner subsequently approved accepting that module's implicit
+augmentation relationships project-wide: `consumers` and `declaration` are optional
+selectors. Omission means all consumers or all declaration files, respectively;
+explicit null, empty or invalid supplied selectors fail. Existing scoped entries
+retain their meaning. This also covers new consumers and declaration files
+without further policy edits. This deliberately accepts the
 module-string relationship, including its contribution to transitive reachability;
 it does not grant a dependency on the declaration's component.
 
