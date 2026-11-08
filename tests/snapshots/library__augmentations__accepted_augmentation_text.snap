@@ -1,0 +1,5 @@
+---
+source: tests/library/augmentations.rs
+expression: lines
+---
+Accepted augmentation: src/platform/link.ts:1 -> src/app/router.ts for router-lib: routing registration is intentional; omitted from dependency and reach checks

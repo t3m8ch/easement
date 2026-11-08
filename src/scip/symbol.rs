@@ -177,6 +177,8 @@ pub(super) fn cut(symbol: &str, count: usize) -> String {
 /// another, and [`super::Indexed::facts`] makes the same facts of the same shapes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Name {
+    /// The external module this augmentation or a name within it extends.
+    pub(super) augmentation: Option<String>,
     pub(super) shape: Shape,
     /// The symbol whose definition is the name's home: the symbol itself, or the
     /// module that a constructor or a nested type stands for.
@@ -347,6 +349,15 @@ pub(super) fn modules(symbol: &str, parsed: &Parsed) -> Name {
         _ => Shape::Member,
     };
     Name {
+        augmentation: (parsed.scheme == "scip-typescript")
+            .then(|| {
+                let last = path.last()?;
+                ['"', '\'']
+                    .into_iter()
+                    .find_map(|q| last.strip_prefix(q)?.strip_suffix(q).map(str::to_string))
+            })
+            .flatten()
+            .filter(|module| !module.is_empty() && !module.starts_with(['.', '/'])),
         shape,
         symbol: symbol.to_string(),
         owner: (shape == Shape::Member).then(|| cut(symbol, modules + 1)),
@@ -400,6 +411,7 @@ pub(super) fn classes(
     };
     let path = names[..(namespaces + 1).min(names.len())].to_vec();
     Name {
+        augmentation: None,
         shape,
         symbol: match shape {
             Shape::Module => class.clone(),
@@ -447,6 +459,7 @@ pub(super) fn ruby(symbol: &str, parsed: &Parsed) -> Name {
     };
     let qualified = path.join("::");
     Name {
+        augmentation: None,
         shape,
         symbol: match shape {
             Shape::Module => class.clone(),

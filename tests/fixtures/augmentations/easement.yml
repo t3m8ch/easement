@@ -1,0 +1,8 @@
+version: 1
+components:
+  platform: { in: src/platform }
+  app: { in: src/app }
+  server: { in: src/server }
+rules:
+  platform: { may_depend_on: [], must_not_reach: [server] }
+  app: { may_depend_on: [server] }

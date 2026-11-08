@@ -31,3 +31,5 @@ mod surfaces;
 mod symbols;
 mod unused;
 mod warn;
+
+mod augmentations;

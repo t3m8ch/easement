@@ -124,3 +124,6 @@ Tools are pinned in `mise.toml`: `mise install`, which also installs the git hoo
 ## License
 
 MIT
+
+This fork supports opt-in [external-module augmentation acceptances](docs/augmentation-policy.md)
+for narrowly selected metadata relationships, while keeping ordinary imports checked.

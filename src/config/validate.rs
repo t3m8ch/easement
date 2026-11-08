@@ -44,6 +44,30 @@ impl Config {
             }
             Ok(())
         };
+        for accept in &self.accept_augmentations {
+            if accept.consumers.is_empty()
+                || accept.module.trim().is_empty()
+                || accept.because.trim().is_empty()
+            {
+                bail!("accept_augmentations requires consumers, module and a nonempty because");
+            }
+            if accept.module.starts_with(['.', '/']) || accept.module.contains(['*', '?']) {
+                bail!("accept_augmentations.module must be an exact external module");
+            }
+            let path = &accept.declaration;
+            if path.is_empty()
+                || path.starts_with('/')
+                || path.contains(['*', '?', '[', '\\', ':'])
+                || path
+                    .split('/')
+                    .any(|p| p == ".." || p == "." || p.is_empty())
+            {
+                bail!("accept_augmentations.declaration must be an exact project-relative path");
+            }
+            for consumer in &accept.consumers {
+                check(consumer, "accept_augmentations.consumers")?;
+            }
+        }
         for name in &self.common {
             check(name, "common")?;
         }

@@ -83,7 +83,47 @@ impl Project {
     ) -> Result<Judgment> {
         let config = &policy.config;
         let map = ComponentMap::new(config)?;
-        let (mut violations, edges, mut stats) = check::evaluate(config, &map, &scan.deps);
+        let mut accepted_augmentations = Vec::new();
+        let deps: Vec<_> = scan
+            .deps
+            .iter()
+            .filter(|dep| {
+                let lang::Target::Internal(target) = &dep.target else {
+                    return true;
+                };
+                let Some(accept) = config.accepted_augmentation(
+                    map.component_of_unit(&dep.from),
+                    dep.augmentation.as_deref(),
+                    &target.key(),
+                ) else {
+                    return true;
+                };
+                accepted_augmentations.push(check::AcceptedAugmentation {
+                    file: relpath::slash(&dep.file),
+                    line: dep.line,
+                    module: accept.module.clone(),
+                    declaration: accept.declaration.clone(),
+                    because: accept.because.clone(),
+                });
+                false
+            })
+            .cloned()
+            .collect();
+        let flow = scan.flow.as_ref().map(|flow| {
+            let mut flow = flow.clone();
+            flow.edges.retain(|edge| {
+                config
+                    .accepted_augmentation(
+                        map.component_of(&edge.from.file),
+                        edge.augmentation.as_deref(),
+                        &edge.to.file,
+                    )
+                    .is_none()
+            });
+            flow
+        });
+        let (mut violations, edges, mut stats) = check::evaluate(config, &map, &deps);
+        stats.accepted_augmentations = accepted_augmentations;
         violations.extend(symbols::symbols(config, &map, &scan.symbols));
         violations.extend(check::naming(config, &map, &scan.types)?);
         let undeclared =
@@ -115,9 +155,9 @@ impl Project {
         violations.extend(chains::reaches(
             config,
             &map,
-            &scan.deps,
+            &deps,
             &scan.all_files,
-            scan.flow.as_ref(),
+            flow.as_ref(),
         ));
         violations.extend(check::metrics(config, &edges));
         violations.extend(matching::orphans(config, &map, &scan.paths));

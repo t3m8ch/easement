@@ -382,6 +382,7 @@ impl Diff<'_> {
             rules: _,
             // The decision on pairs of components: `permissions`.
             common: _,
+            accept_augmentations,
             layers: _,
             // Which files are judged as the source of a dependency: the debt section.
             exclude: _,
@@ -412,6 +413,29 @@ impl Diff<'_> {
             &Items::forbidden(&base.forbid_symbol, None),
             &Items::forbidden(forbid_symbol, None),
             Direction::Tightened,
+        );
+        let accepted = |items: &[crate::config::AugmentationAcceptance]| {
+            items
+                .iter()
+                .map(|a| {
+                    format!(
+                        "{} -> {} in {}: {}",
+                        a.consumers.join(", "),
+                        a.module,
+                        a.declaration,
+                        a.because
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        let before = accepted(&base.accept_augmentations);
+        let after = accepted(accept_augmentations);
+        self.items(
+            At::Top,
+            "accept_augmentations",
+            &Items::plain(&before, None),
+            &Items::plain(&after, None),
+            Direction::Loosened,
         );
         self.allow(&base.forbid_symbol, forbid_symbol);
         self.no_cycles(&base.no_cycles, no_cycles);

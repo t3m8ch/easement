@@ -34,6 +34,10 @@ pub struct Config {
     /// Components every other component may depend on.
     #[serde(default)]
     pub common: Vec<String>,
+    /// Accept implicit module-string relationships to exactly one augmentation file,
+    /// for the listed consumers. Direct imports and explicit symbol uses remain checked.
+    #[serde(default)]
+    pub accept_augmentations: Vec<AugmentationAcceptance>,
     /// Per component: what it may depend on and use.
     #[serde(default)]
     pub rules: BTreeMap<String, Rule>,
@@ -124,6 +128,33 @@ pub struct Config {
     /// component owns cannot be judged and fails. `extends` joins the lists.
     #[serde(default)]
     pub examples: Vec<Example>,
+}
+
+/// An intentional implicit relationship to an external-module augmentation.
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct AugmentationAcceptance {
+    pub consumers: Vec<String>,
+    pub module: String,
+    /// Exact project-relative path, without globs.
+    pub declaration: String,
+    pub because: String,
+}
+
+impl Config {
+    pub fn accepted_augmentation(
+        &self,
+        consumer: Option<&str>,
+        module: Option<&str>,
+        declaration: &str,
+    ) -> Option<&AugmentationAcceptance> {
+        let (consumer, module) = (consumer?, module?);
+        self.accept_augmentations.iter().find(|accept| {
+            accept.consumers.iter().any(|c| c == consumer)
+                && accept.module == module
+                && accept.declaration == declaration
+        })
+    }
 }
 
 /// A policy example: a proposed dependency and the decision it must get.

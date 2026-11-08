@@ -1,0 +1,13 @@
+---
+source: tests/library/augmentations.rs
+expression: "json(&accepted)[\"stats\"][\"accepted_augmentations\"]"
+---
+[
+  {
+    "because": "routing registration is intentional",
+    "declaration": "src/app/router.ts",
+    "file": "src/platform/link.ts",
+    "line": 1,
+    "module": "router-lib"
+  }
+]

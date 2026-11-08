@@ -615,6 +615,19 @@ impl Report<'_> {
             }
             section(&mut out, &body);
         }
+        for accepted in &stats.accepted_augmentations {
+            section(
+                &mut out,
+                &format!(
+                    "Accepted augmentation: {}:{} -> {} for {}: {}; omitted from dependency and reach checks\n",
+                    accepted.file,
+                    accepted.line,
+                    accepted.declaration,
+                    accepted.module,
+                    accepted.because
+                ),
+            );
+        }
         let gaps = gap_lines(
             &coverage.evidence_gaps,
             &coverage.accepted_gaps,

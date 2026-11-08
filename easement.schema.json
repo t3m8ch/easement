@@ -5,6 +5,14 @@
   "description": "Configuration of the easement architecture quality gate.",
   "type": "object",
   "properties": {
+    "accept_augmentations": {
+      "description": "Accept implicit module-string relationships to exactly one augmentation file, for the listed consumers. Direct imports and explicit symbol uses remain checked.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "$ref": "#/definitions/AugmentationAcceptance"
+      }
+    },
     "baseline": {
       "description": "Path of the baseline file, default easement.baseline.yml.",
       "type": [
@@ -251,6 +259,35 @@
       "additionalProperties": false,
       "required": [
         "name"
+      ]
+    },
+    "AugmentationAcceptance": {
+      "description": "An intentional implicit relationship to an external-module augmentation.",
+      "type": "object",
+      "properties": {
+        "because": {
+          "type": "string"
+        },
+        "consumers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "declaration": {
+          "description": "Exact project-relative path, without globs.",
+          "type": "string"
+        },
+        "module": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "consumers",
+        "module",
+        "declaration",
+        "because"
       ]
     },
     "Component": {

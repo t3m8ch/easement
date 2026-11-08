@@ -391,8 +391,20 @@ impl Unjudged {
     }
 }
 
+#[derive(Debug, Serialize)]
+pub struct AcceptedAugmentation {
+    pub file: String,
+    pub line: usize,
+    pub module: String,
+    pub declaration: String,
+    pub because: String,
+}
+
 #[derive(Debug, Default, Serialize)]
 pub struct Stats {
+    /// Relationships deliberately omitted from dependency and reach judgments.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub accepted_augmentations: Vec<AcceptedAugmentation>,
     pub files: usize,
     pub internal_deps: usize,
     pub external_deps: usize,

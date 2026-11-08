@@ -48,12 +48,13 @@ pub fn file_of(key: &str) -> &str {
 /// A reference at `line` of the source node's file to the target node.
 #[derive(Debug, Clone)]
 pub struct Edge {
+    pub augmentation: Option<String>,
     pub from: Node,
     pub to: Node,
     pub line: usize,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Flow {
     /// The methods of each file that the index gave a range.
     pub scopes: BTreeMap<String, Vec<Scope>>,

@@ -47,8 +47,8 @@ pub struct Reference {
     /// document's `encoding`; `None` when its range is not on one line.
     pub columns: Option<(usize, usize)>,
     pub symbol: String,
-    /// For a reference into an unnamed npm package (see `UNNAMED_NPM`) that
-    /// stands on the string of an import: the module the string spells.
+    /// When the reference stands on a bare module string: its spelling.
+    /// Also resolves unnamed npm packages (see `UNNAMED_NPM`).
     pub spelled: Option<String>,
 }
 
@@ -248,7 +248,7 @@ pub struct Documents(pub Vec<Document>);
 /// Parses an index written by an indexer that ran in `base` (a directory
 /// relative to the project `root`, `""` for the root itself). Documents outside
 /// the project, such as generated files in a build cache, are dropped. The
-/// source of a document is read only for a reference into an unnamed package.
+/// source is read for module-string provenance and unnamed packages.
 pub fn parse(bytes: &[u8], root: &Path, base: &Path) -> Result<Vec<Document>> {
     let index = Index::parse_from_bytes(bytes).context("not a SCIP index")?;
     let prefix = relpath::slash(base);
@@ -294,7 +294,9 @@ pub fn parse(bytes: &[u8], root: &Path, base: &Path) -> Result<Vec<Document>> {
                 }
                 parsed.definitions.push(occurrence.symbol.clone());
             } else {
-                let spelled = match occurrence.symbol.starts_with(UNNAMED_NPM) {
+                let spelled = match occurrence.symbol.starts_with(UNNAMED_NPM)
+                    || occurrence.symbol.ends_with('/')
+                {
                     true => {
                         let lines = source.get_or_insert_with(|| {
                             std::fs::read_to_string(root.join(&parsed.path))
@@ -303,8 +305,10 @@ pub fn parse(bytes: &[u8], root: &Path, base: &Path) -> Result<Vec<Document>> {
                                 .map(str::to_string)
                                 .collect()
                         });
-                        spelled_module(lines, occurrence, encoding)
-                            .filter(|module| installed(&root.join(&parsed.path), module))
+                        spelled_module(lines, occurrence, encoding).filter(|module| {
+                            !occurrence.symbol.starts_with(UNNAMED_NPM)
+                                || installed(&root.join(&parsed.path), module)
+                        })
                     }
                     false => None,
                 };
@@ -426,6 +430,7 @@ struct DepKey<'a> {
     /// The part of the file the line is in.
     part: Option<&'a Part>,
     written: Written,
+    augmentation: Option<String>,
 }
 
 /// Dependencies and symbol uses of the documents.
@@ -860,6 +865,7 @@ impl<'a> Indexed<'a> {
                     continue;
                 }
                 if name.shape == Shape::TopLevel
+                    && name.augmentation.is_none()
                     && named
                         .get(&(&name.package, name.path.as_slice()))
                         .is_some_and(|line| *line <= reference.line)
@@ -909,6 +915,10 @@ impl<'a> Indexed<'a> {
                     external: module,
                     part,
                     written,
+                    augmentation: name
+                        .augmentation
+                        .clone()
+                        .filter(|module| reference.spelled.as_ref() == Some(module)),
                 };
                 let line = first.entry(key).or_insert(reference.line);
                 *line = (*line).min(reference.line);
@@ -958,6 +968,7 @@ impl<'a> Indexed<'a> {
                         external: String::new(),
                         part: part_at(document, reference.line),
                         written: Written::Name,
+                        augmentation: None,
                     };
                     by_alias.entry(key).or_default().insert(Aliased {
                         line: reference.line,
@@ -1022,6 +1033,7 @@ impl<'a> Indexed<'a> {
                         Some(part) => Unit::in_part(Path::new(&document.path), part.clone()),
                         None => dep.from.clone(),
                     },
+                    augmentation: key.augmentation.clone(),
                     written: key.written,
                     mentions: key
                         .internal
@@ -1121,6 +1133,7 @@ impl Indexed<'_> {
             .iter()
             .flat_map(|(file, scopes)| {
                 scopes.iter().map(|scope| Edge {
+                    augmentation: None,
                     from: Node {
                         file: file.clone(),
                         scope: Some(scope.symbol.clone()),
@@ -1168,6 +1181,11 @@ impl Indexed<'_> {
                     for to in &targets {
                         if from != *to {
                             flow.edges.push(Edge {
+                                augmentation: self
+                                    .names
+                                    .get(symbol)
+                                    .and_then(|name| name.augmentation.clone())
+                                    .filter(|module| reference.spelled.as_ref() == Some(module)),
                                 from: from.clone(),
                                 to: to.clone(),
                                 line: reference.line,

@@ -97,6 +97,8 @@ pub enum Target {
 /// A resolved dependency of one project file.
 #[derive(Debug, Clone)]
 pub struct Dep {
+    /// The external module whose implicit augmentation caused this relationship.
+    pub augmentation: Option<String>,
     /// Where it is written: diff mode, suppressions, the baseline and the
     /// report read the file and the line.
     pub file: PathBuf,
@@ -177,6 +179,7 @@ impl Dep {
     ) -> Self {
         let file = file.into();
         Dep {
+            augmentation: None,
             from: Unit::from(file.as_path()),
             file,
             line,
